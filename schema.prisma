@@ -1,0 +1,82 @@
+datasource db {
+  provider = "mysql" // Atau "postgresql" / "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  SISWA
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  username  String    @unique
+  password  String
+  nama      String
+  kelas     String?
+  role      Role      @default(SISWA)
+  createdAt DateTime  @default(now())
+  
+  posts     Post[]
+  comments  Comment[]
+  aduan     Aduan[]
+}
+
+model Post {
+  id        Int       @id @default(autoincrement())
+  judul     String
+  isi       String    @db.Text
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  comments  Comment[]
+}
+
+model Comment {
+  id        Int       @id @default(autoincrement())
+  isi       String    @db.Text
+  postId    Int
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentId  Int?
+  parent    Comment?  @relation("NestedComments", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("NestedComments")
+  createdAt DateTime  @default(now())
+}
+
+model Aduan {
+  id        Int      @id @default(autoincrement())
+  judul     String
+  isi       String   @db.Text
+  balasan   String?  @db.Text
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model LowonganBkk {
+  id          Int      @id @default(autoincrement())
+  judul       String
+  perusahaan  String
+  deskripsi   String   @db.Text
+  persyaratan String   @db.Text
+  foto        String?
+  createdAt   DateTime @default(now())
+}
+
+model Pelanggaran {
+  id              Int      @id @default(autoincrement())
+  namaSiswa       String
+  kelas           String
+  jenisPelanggaran String
+  poin            Int
+  tanggal         DateTime @default(now())
+  fotoBukti       String?
+  parentToken     String   @unique
+  createdAt       DateTime @default(now())
+}
