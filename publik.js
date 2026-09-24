@@ -93,7 +93,7 @@ function handleLogin(e) {
   const u = document.getElementById('loginUsername')?.value;
   const p = document.getElementById('loginPassword')?.value;
 
-  if (u === 'admin' && p === 'mahasa123-') {
+  if (u === 'admin' && p === 'mahasa123') {
     localStorage.setItem('isLoggedIn', 'true');
     isLoggedIn = true;
     toggleModal('loginModal', false);
