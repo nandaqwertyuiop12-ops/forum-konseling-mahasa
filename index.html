@@ -1,11 +1,15 @@
 
 <!DOCTYPE html>
 <html lang="id">
+  
+
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Forum Konseling & Layanan Siswa</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-amber-50/30 min-h-screen text-gray-800 flex flex-col justify-between">
 
@@ -85,7 +89,7 @@
         <h3 class="font-bold text-lg text-gray-800">🔐 Login Guru / Admin</h3>
         <button onclick="toggleModal('loginModal', false)" class="text-gray-400 hover:text-gray-600 font-bold text-lg">&times;</button>
       </div>
-      
+     
       <form onsubmit="handleLogin(event)" class="space-y-3">
         <div>
             <label class="block text-xs font-semibold text-gray-600 mb-1">Username</label>
@@ -100,7 +104,12 @@
                 </button>
             </div>
         </div>
-          
+        <!-- TOMBOL LOGIN YANG DITAMBAHKAN KEMBALI -->
+        <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm transition">
+            Masuk
+        </button>
+    </form>
+
   <!-- Modal Akses Orang Tua -->
   <div id="parentModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl">
@@ -198,6 +207,80 @@
   </script>
   
   <!-- File JavaScript Publik -->
-  <script src="/publik.js"></script>
+  <script src="/publik.js"></script><script>
+    // Konfigurasi Supabase
+    const SUPABASE_URL = 'https://yirdxohbsxrlocjfnmpm.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_vEr7Xqrr09EcRV07yPgkxw_p1M5N'; 
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    // Fungsi Memuat Komentar dari Database Supabase
+    async function loadDiscussions() {
+        const { data, error } = await supabaseClient
+            .from('discussions')
+            .select('*')
+            .order('created_at', { ascending: true });
+    
+        if (error) {
+            console.error('Gagal mengambil diskusi:', error);
+            return;
+        }
+    
+        // Cari container tempat menampilkan diskusi
+        const container = document.getElementById('discussionList') || document.getElementById('discussionContainer');
+        if (!container) return;
+    
+        container.innerHTML = '';
+        data.forEach(item => {
+            const nameText = item.name ? item.name : 'Anonim';
+            container.innerHTML += `
+                <div class="p-3 bg-gray-50 rounded-xl mb-2 border">
+                    <div class="text-xs font-bold text-gray-700">${nameText}</div>
+                    <div class="text-sm text-gray-800">${item.message}</div>
+                </div>
+            `;
+        });
+    }
+    
+    // Fungsi Mengirim Komentar Baru ke Database Supabase
+    async function sendDiscussion() {
+        const nameInput = document.getElementById('authorInput') || document.getElementById('nameInput');
+        const messageInput = document.getElementById('messageInput') || document.getElementById('commentInput');
+    
+        const name = nameInput ? nameInput.value.trim() : '';
+        const message = messageInput ? messageInput.value.trim() : '';
+    
+        if (!message) {
+            alert('Pesan tidak boleh kosong!');
+            return;
+        }
+    
+        const { error } = await supabaseClient
+            .from('discussions')
+            .insert([{ name: name, message: message }]);
+    
+        if (error) {
+            alert('Gagal mengirim pesan: ' + error.message);
+        } else {
+            if (messageInput) messageInput.value = '';
+            loadDiscussions();
+        }
+    }
+    
+    // Jalankan saat halaman selesai dimuat & aktifkan fungsi Realtime
+    document.addEventListener('DOMContentLoaded', () => {
+        loadDiscussions();
+    
+        // Dengarkan pesan baru secara realtime dari pengguna lain
+        supabaseClient
+            .channel('public:discussions')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'discussions' }, () => {
+                loadDiscussions();
+            })
+            .subscribe();
+    });
+    </script>
+
+
+
 </body>
 </html>
